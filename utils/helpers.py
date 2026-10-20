@@ -67,7 +67,7 @@ def convert_ogg_to_wav(ogg_path: Union[str, Path]) -> Path:
         raise
 
 
-def cleanup_file(filepath: Union[str, Path]) -> None:
+def cleanup_file(filepath: Union[str, Path, None]) -> None:
     """
     Delete a file safely.
     
@@ -75,6 +75,8 @@ def cleanup_file(filepath: Union[str, Path]) -> None:
         filepath: Path to the file to delete
     """
     try:
+        if filepath is None:
+            return
         filepath = Path(filepath)
         if filepath.exists():
             filepath.unlink()
@@ -83,7 +85,7 @@ def cleanup_file(filepath: Union[str, Path]) -> None:
         logger.warning(f"Error cleaning up file {filepath}: {e}")
 
 
-def cleanup_files(*filepaths: Union[str, Path]) -> None:
+def cleanup_files(*filepaths: Union[str, Path, None]) -> None:
     """
     Delete multiple files safely.
     

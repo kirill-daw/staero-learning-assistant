@@ -126,6 +126,27 @@ class VectorIndex:
             logger.error(f"Error in similarity search with scores: {e}")
             raise
     
+    def _get_indexed_sources(self) -> set:
+        """
+        Get names of source files already present in the vector store.
+
+        Returns:
+            Set of source file names (metadata 'source' values)
+        """
+        try:
+            collection = self.vectorstore._collection
+            if collection.count() == 0:
+                return set()
+            result = collection.get(include=["metadatas"])
+            metadatas = result.get("metadatas") or []
+            return {
+                m.get("source") for m in metadatas
+                if m and m.get("source")
+            }
+        except Exception as e:
+            logger.warning(f"Could not read indexed sources: {e}")
+            return set()
+
     def index_documents_directory(
         self,
         directory: Path = DOCUMENTS_DIR,
@@ -152,6 +173,28 @@ class VectorIndex:
             
             if not documents:
                 logger.warning("No documents found to index")
+                return 0
+            
+            # Filter out already indexed chunks to keep indexing idempotent
+            indexed_sources = self._get_indexed_sources()
+            new_documents = [
+                doc for doc in documents
+                if doc.metadata.get("source") not in indexed_sources
+            ]
+            if len(new_documents) < len(documents):
+                skipped_sources = {
+                    doc.metadata.get("source")
+                    for doc in documents
+                    if doc.metadata.get("source") in indexed_sources
+                }
+                logger.info(
+                    f"Skipping {len(documents) - len(new_documents)} chunks "
+                    f"from already indexed files: {', '.join(sorted(skipped_sources))}"
+                )
+            documents = new_documents
+            
+            if not documents:
+                logger.info("All documents already indexed")
                 return 0
             
             # Add to vector store

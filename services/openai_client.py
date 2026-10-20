@@ -136,15 +136,31 @@ class OpenAIClient:
         try:
             logger.debug(f"Transcribing audio: {audio_file_path}")
             
+            # ProxyAPI не поддерживает response_format="text"
+            response_format = "json" if self.use_proxyapi else "text"
+            
             with open(audio_file_path, "rb") as audio_file:
                 response = await self.client.audio.transcriptions.create(
                     model=model,
                     file=audio_file,
-                    response_format="text"
+                    response_format=response_format
                 )
             
-            logger.info(f"Audio transcribed: {len(response)} characters")
-            return response
+            # Extract text from response
+            text = getattr(response, "text", None)
+            if text is None and isinstance(response, dict):
+                text = response.get("text")
+            if text is None and isinstance(response, str):
+                text = response
+            
+            if not text or not str(text).strip():
+                raise ValueError(
+                    f"Transcription response contains no text: {response!r}"
+                )
+            
+            text = str(text)
+            logger.info(f"Audio transcribed: {len(text)} characters")
+            return text
             
         except Exception as e:
             logger.error(f"Error transcribing audio: {e}")

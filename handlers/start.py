@@ -3,6 +3,8 @@ Start and Help Command Handlers.
 Handles /start and /help commands using pyTelegramBotAPI.
 """
 
+import html
+
 from telebot import types
 from bot import bot
 from utils.logging import logger
@@ -151,18 +153,18 @@ async def cmd_stats(message: types.Message):
             return
         
         total_docs = stats.get("total_documents", 0)
-        persist_dir = stats.get("persist_directory", "N/A")
+        persist_dir = html.escape(stats.get("persist_directory", "N/A"))
         
-        stats_text = f"""📊 **Статистика базы знаний**
+        stats_text = f"""📊 <b>Статистика базы знаний</b>
 
-📄 Документов в индексе: {total_docs}
+📄 Фрагментов в индексе: {total_docs}
 💾 Директория: {persist_dir}
 
 {"✅ База знаний готова к использованию!" if total_docs > 0 else "⚠️ База знаний пуста. Добавьте документы в data/documents/"}
 
 Используйте /mode rag для работы с базой знаний."""
         
-        await bot.send_message(message.chat.id, stats_text)
+        await bot.send_message(message.chat.id, stats_text, parse_mode='HTML')
         
     except Exception as e:
         logger.error(f"Error getting stats: {e}")

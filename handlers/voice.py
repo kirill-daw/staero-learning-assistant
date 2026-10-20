@@ -106,6 +106,18 @@ async def handle_voice_message(message: types.Message):
         # Process voice request
         response = await route_voice_request(user_id, voice_file_path)
         
+        # Handle processing error
+        if response.get("error"):
+            logger.error(
+                f"Voice request failed for user {user_id}: {response['error']}"
+            )
+            await bot.send_message(
+                message.chat.id,
+                "❌ Не удалось обработать голосовое сообщение.\n"
+                "Попробуйте отправить его еще раз."
+            )
+            return
+        
         # Send transcription
         await bot.send_message(
             message.chat.id,
